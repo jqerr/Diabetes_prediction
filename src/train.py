@@ -19,6 +19,9 @@ import importlib
 from pathlib import Path
 from datetime import datetime
 
+# ensure project root is on sys.path so src.features is importable
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import yaml
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, cross_validate
@@ -93,6 +96,12 @@ def run(config_path: str) -> None:
     model       = model_class(**model_params)
 
     X_train, y_train = load_train_data(use_scaled)
+
+    if "features" in cfg:
+        feature_module = importlib.import_module(cfg["features"]["module"])
+        for fn_name in cfg["features"]["transforms"]:
+            X_train = getattr(feature_module, fn_name)(X_train)
+            print(f"  Applied feature transform: {fn_name} → {list(X_train.columns)}")
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     print("Running 5-fold stratified CV...")
