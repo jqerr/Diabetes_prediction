@@ -28,16 +28,8 @@ ENV/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Data (large/raw files — keep processed/small samples if needed)
-data/raw/
-data/external/
-*.csv
-*.parquet
-*.feather
-*.pkl
-*.pickle
-*.h5
-*.hdf5
+# Data — never push
+data/
 
 # Models (large binary artifacts)
 models/*.pkl
