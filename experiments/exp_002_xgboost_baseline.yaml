@@ -1,0 +1,17 @@
+experiment_id: exp_002
+description: "XGBoost baseline, default hyperparameters"
+hypothesis: "Default XGBoost with scale_pos_weight for class imbalance; compare against RF baseline"
+
+data:
+  use_scaled: false   # tree-based, scale-invariant
+
+model:
+  type: XGBClassifier
+  params:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    scale_pos_weight: 1.87   # neg/pos ratio from train set (65.1% / 34.9%)
+    random_state: 42
+    eval_metric: logloss     # suppresses default warning
+    verbosity: 0

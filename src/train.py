@@ -19,6 +19,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.model_selection import StratifiedKFold, cross_validate
+from xgboost import XGBClassifier
 
 MODEL_REGISTRY = {
     "LogisticRegression":         LogisticRegression,
@@ -26,6 +27,7 @@ MODEL_REGISTRY = {
     "GradientBoostingClassifier": GradientBoostingClassifier,
     "KNeighborsClassifier":       KNeighborsClassifier,
     "SVC":                        SVC,
+    "XGBClassifier":              XGBClassifier,
 }
 
 SCORING = {
