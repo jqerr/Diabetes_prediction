@@ -6,29 +6,22 @@ Usage: python src/train.py experiments/<config>.yaml
 Each YAML file defines one experiment (one idea).
 Metrics are appended to results/experiment_log.csv.
 Test set is never loaded here — sealed until end of project.
+
+Model is specified as a full dotted import path in the YAML, e.g.:
+  model:
+    type: sklearn.ensemble.RandomForestClassifier
+    type: xgboost.XGBClassifier
+    type: lightgbm.LGBMClassifier
 """
 import sys
 import subprocess
+import importlib
 from pathlib import Path
 from datetime import datetime
 
 import yaml
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
 from sklearn.model_selection import StratifiedKFold, cross_validate
-from xgboost import XGBClassifier
-
-MODEL_REGISTRY = {
-    "LogisticRegression":         LogisticRegression,
-    "RandomForestClassifier":     RandomForestClassifier,
-    "GradientBoostingClassifier": GradientBoostingClassifier,
-    "KNeighborsClassifier":       KNeighborsClassifier,
-    "SVC":                        SVC,
-    "XGBClassifier":              XGBClassifier,
-}
 
 SCORING = {
     "accuracy":  "accuracy",
@@ -38,8 +31,8 @@ SCORING = {
     "recall":    "recall",
 }
 
-DATA_DIR  = Path("data/preprocessed_data")
-LOG_FILE  = Path("results/experiment_log.csv")
+DATA_DIR = Path("data/preprocessed_data")
+LOG_FILE = Path("results/experiment_log.csv")
 
 
 def get_git_hash() -> str:
@@ -50,6 +43,12 @@ def get_git_hash() -> str:
         ).decode().strip()
     except Exception:
         return "N/A"
+
+
+def load_model_class(dotted_path: str):
+    module_path, class_name = dotted_path.rsplit(".", 1)
+    module = importlib.import_module(module_path)
+    return getattr(module, class_name)
 
 
 def load_train_data(use_scaled: bool):
@@ -64,7 +63,6 @@ def append_row(row: dict) -> None:
 
     if LOG_FILE.exists():
         existing = pd.read_csv(LOG_FILE)
-        # union columns so experiments with different params stay aligned
         all_cols = list(existing.columns) + [c for c in row if c not in existing.columns]
         new_df   = pd.DataFrame([row]).reindex(columns=all_cols)
         updated  = pd.concat([existing.reindex(columns=all_cols), new_df], ignore_index=True)
@@ -77,11 +75,11 @@ def run(config_path: str) -> None:
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
 
-    exp_id      = cfg["experiment_id"]
-    description = cfg.get("description", "")
-    hypothesis  = cfg.get("hypothesis",  "")
-    use_scaled  = cfg["data"].get("use_scaled", False)
-    model_type  = cfg["model"]["type"]
+    exp_id       = cfg["experiment_id"]
+    description  = cfg.get("description", "")
+    hypothesis   = cfg.get("hypothesis",  "")
+    use_scaled   = cfg["data"].get("use_scaled", False)
+    model_type   = cfg["model"]["type"]
     model_params = cfg["model"].get("params", {})
 
     print(f"\n{'='*60}")
@@ -91,14 +89,10 @@ def run(config_path: str) -> None:
     print(f"Data       : {'scaled' if use_scaled else 'unscaled'} train set only")
     print(f"{'='*60}")
 
-    if model_type not in MODEL_REGISTRY:
-        raise ValueError(
-            f"Unknown model '{model_type}'. "
-            f"Available: {list(MODEL_REGISTRY)}"
-        )
+    model_class = load_model_class(model_type)
+    model       = model_class(**model_params)
 
     X_train, y_train = load_train_data(use_scaled)
-    model = MODEL_REGISTRY[model_type](**model_params)
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     print("Running 5-fold stratified CV...")
