@@ -40,13 +40,6 @@ models/*.pth
 models/*.onnx
 models/*.bin
 
-# Reports / outputs
-reports/figures/
-*.png
-*.jpg
-*.jpeg
-*.svg
-*.pdf
 
 # OS
 .DS_Store
