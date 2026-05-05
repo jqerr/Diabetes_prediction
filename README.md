@@ -18,7 +18,7 @@ data/diabetes.csv
 ## Setup
 
 ```bash
-git clone https://github.com/<your-username>/Diabetes_prediction.git
+git clone https://github.com/jqerr/Diabetes_prediction.git
 cd Diabetes_prediction
 
 pip install -r requirements.txt
