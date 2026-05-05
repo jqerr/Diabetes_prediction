@@ -103,6 +103,13 @@ def run(config_path: str) -> None:
             X_train = getattr(feature_module, fn_name)(X_train)
             print(f"  Applied feature transform: {fn_name} → {list(X_train.columns)}")
 
+    if "sampling" in cfg:
+        from imblearn.pipeline import Pipeline as ImbPipeline
+        sampler_class  = load_model_class(cfg["sampling"]["method"])
+        sampler        = sampler_class(**cfg["sampling"].get("params", {}))
+        model          = ImbPipeline([("sampler", sampler), ("model", model)])
+        print(f"  Sampling: {cfg['sampling']['method']} (applied inside each CV fold)")
+
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     print("Running 5-fold stratified CV...")
     cv_results = cross_validate(model, X_train, y_train, cv=cv, scoring=SCORING)

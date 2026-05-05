@@ -1,0 +1,21 @@
+experiment_id: exp_004
+description: "XGBoost + SMOTE inside CV folds"
+hypothesis: "SMOTE oversampling inside each CV fold outperforms scale_pos_weight for handling class imbalance"
+
+data:
+  use_scaled: false
+
+sampling:
+  method: imblearn.over_sampling.SMOTE
+  params:
+    random_state: 42
+
+model:
+  type: xgboost.XGBClassifier
+  params:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    random_state: 42
+    eval_metric: logloss
+    verbosity: 0
