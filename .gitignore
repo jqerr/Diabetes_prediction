@@ -55,3 +55,6 @@ Thumbs.db
 *.env
 secrets.yaml
 secrets.json
+
+# Claude
+CLAUDE.md
