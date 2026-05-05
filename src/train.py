@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import yaml
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.model_selection import StratifiedKFold, cross_validate, RandomizedSearchCV
 
 SCORING = {
     "accuracy":  "accuracy",
@@ -111,6 +111,34 @@ def run(config_path: str) -> None:
         print(f"  Sampling: {cfg['sampling']['method']} (applied inside each CV fold)")
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+    if "search" in cfg:
+        search_cfg  = cfg["search"]
+        raw_grid    = search_cfg["param_grid"]
+        is_pipeline = "sampling" in cfg
+        # pipeline params need model__ prefix; plain model params don't
+        param_grid  = {(f"model__{k}" if is_pipeline else k): v for k, v in raw_grid.items()}
+        n_iter      = search_cfg.get("n_iter", 50)
+        search_scoring = search_cfg.get("scoring", "roc_auc")
+
+        print(f"  RandomizedSearchCV: n_iter={n_iter}, scoring={search_scoring}...")
+        search = RandomizedSearchCV(
+            model, param_grid,
+            n_iter=n_iter,
+            scoring=search_scoring,
+            cv=cv,
+            random_state=42,
+            n_jobs=-1
+        )
+        search.fit(X_train, y_train)
+        print(f"  Best {search_scoring}: {search.best_score_:.4f}")
+        print(f"  Best params: {search.best_params_}")
+
+        # apply best params to model and update model_params for logging
+        model.set_params(**search.best_params_)
+        model_params = {**model_params,
+                        **{k.replace("model__", ""): v for k, v in search.best_params_.items()}}
+
     print("Running 5-fold stratified CV...")
     cv_results = cross_validate(model, X_train, y_train, cv=cv, scoring=SCORING)
 
